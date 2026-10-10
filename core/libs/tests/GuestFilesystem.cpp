@@ -199,9 +199,15 @@ int main() {
     Require(lstat_nid_postfix("", &linkStatus) == -1 && *__error_nid_postfix() == 2);
     Require(lstat_nid_postfix(nullptr, &linkStatus) == -1 && *__error_nid_postfix() == 14);
     Require(lstat_nid_postfix(presentName.c_str(), nullptr) == -1 && *__error_nid_postfix() == 14);
-#ifndef _WIN32
     const auto link = root / "link";
+#ifdef _WIN32
+    std::error_code symlinkError;
+    std::filesystem::create_symlink("present.txt", link, symlinkError);
+    if (!symlinkError) {
+#else
     std::filesystem::create_symlink("present.txt", link);
+    {
+#endif
     Require(lstat_nid_postfix(link.string().c_str(), &linkStatus) == 0);
     Require((linkStatus.st_mode & 0170000) == 0120000 && linkStatus.st_size == 11);
     Require(stat_nid_postfix(link.string().c_str(), &status) == 0 && (status.st_mode & 0170000) == 0100000);
@@ -211,7 +217,7 @@ int main() {
     Require(stat_nid_postfix(dangling.string().c_str(), &status) == -1 && *__error_nid_postfix() == 2);
     Require(lstat_nid_postfix((root / "present.txt" / "child").string().c_str(), &linkStatus) == -1 && *__error_nid_postfix() == 20);
     Require(unlink_nid_postfix(link.string().c_str()) == 0 && unlink_nid_postfix(dangling.string().c_str()) == 0);
-#endif
+    }
     FileStat identity{};
     FileStat byDescriptor{};
     const int identityDescriptor = open_nid_postfix(presentName.c_str(), 0, 0);
